@@ -22,6 +22,8 @@ class _LoginScreenState extends State<LoginScreen>{
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
+
+
       DocumentSnapshot userData= await _firestore.collection('users').doc(user.user!.uid).get();
       if (!userData.exists) {
         throw Exception("User document not found in Firestore.");
@@ -36,13 +38,13 @@ class _LoginScreenState extends State<LoginScreen>{
       emailController.clear();
       passwordController.clear();
       if(role=='Student'){
-        Navigator.push(context,MaterialPageRoute(builder:(_)=>const StudentDashboard()));
+        Navigator.push(context,MaterialPageRoute(builder:(_)=>StudentDashboard(studentId:user.user!.uid)));
 
       }else if(role=='Teacher'){
-        Navigator.push(context,MaterialPageRoute(builder:(_)=>TeacherDashboard()));
+        Navigator.push(context,MaterialPageRoute(builder:(_)=>TeacherDashboard(teacherId:user.user!.uid)));
       }else if (role == 'Admin') {
         Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const AdminDashboard()));
+            MaterialPageRoute(builder: (_) => AdminDashboard(teacherId:user.user!.uid)));
       }
     }catch(e){
       print(e);
@@ -54,19 +56,97 @@ class _LoginScreenState extends State<LoginScreen>{
   @override
   Widget build(BuildContext context){
     print("Rendering LoginScreen");
+    
     return Scaffold(
       appBar: AppBar(title: Text("Login")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextField(controller: emailController,decoration:InputDecoration(labelText:"Email")),
-            TextField(controller: passwordController,decoration:InputDecoration(labelText:"Password"),obscureText: true),
-            ElevatedButton(onPressed: login,child: Text("Login")),
-            TextButton(onPressed: (){
-              Navigator.push(context,MaterialPageRoute(builder: (_)=> RegisterScreen()));
-
-            }, child: Text("Register Here")),
+            SizedBox(height: 40),
+            // Logo or title section
+            Container(
+              margin: EdgeInsets.only(bottom: 30),
+              child: Text(
+                "TechVerse",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            
+            // Email field
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(
+                labelText: "Email",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: Icon(Icons.email),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            
+            SizedBox(height: 16),
+            
+            // Password field
+            TextField(
+              controller: passwordController,
+              decoration: InputDecoration(
+                labelText: "Password",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: Icon(Icons.lock),
+              ),
+              obscureText: true,
+            ),
+            
+            SizedBox(height: 24),
+            
+            // Login button
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: login,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black87,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  "Login",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            
+            SizedBox(height: 16),
+            
+            // Register button
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: (){
+                  Navigator.push(context,MaterialPageRoute(builder: (_)=> RegisterScreen()));
+                },
+                child: Text(
+                  "Don't have an account? Register Here",
+                  style: TextStyle(fontSize: 16, color: Colors.black87),
+                ),
+              ),
+            ),
+            
+            SizedBox(height: 8),
+            
+            // Forgot password button
             TextButton(
               onPressed: (){
                 showDialog(
@@ -79,41 +159,48 @@ class _LoginScreenState extends State<LoginScreen>{
                         controller: resetEmailController,
                         decoration: InputDecoration(
                           labelText: "Enter Your Email",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                       actions: [
                         TextButton(
+                          onPressed:()=>Navigator.pop(context),
+                          child: Text("Cancel"),
+                        ),
+                        ElevatedButton(
                           onPressed: () async{
                             try{
                               await _auth.sendPasswordResetEmail(
                                 email:resetEmailController.text.trim(),
                               );
-                            Navigator.pop(context);
+                              Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Password reset email sent")),
-                            );
+                                SnackBar(content: Text("Password reset email sent")),
+                              );
                             }
                             catch(e){
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Error ; ${e.toString()}")),
-                            );
+                                SnackBar(content: Text("Error ; ${e.toString()}")),
+                              );
                             }
                           },
-                          child: Text("Send"),
-                        ),
-                        TextButton(
-                          onPressed:()=>Navigator.pop(context),
-                          child: Text("Cancel"),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.black87),
+                          child: Text("Send", style: TextStyle(color: Colors.white)),
                         ),
                       ],
                     );
                   },
                 );
               },
-              child: Text("Forgot Password?"),
+              child: Text(
+                "Forgot Password?",
+                style: TextStyle(fontSize: 16, color: Colors.black87),
+              ),
             ),
-
+            SizedBox(height: 40),
           ],
         ),
       ),

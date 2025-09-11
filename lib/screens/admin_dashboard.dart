@@ -4,78 +4,245 @@ import 'manage_courses.dart';
 import 'add_pdf.dart';
 import 'user_list_screen.dart';
 import 'add_video.dart';
+import 'view_payments.dart';
 
 class AdminDashboard extends StatelessWidget {
-  const AdminDashboard({super.key});
+  final String teacherId;
+  const AdminDashboard({super.key,required this.teacherId});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Admin Dashboard")),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ElevatedButton(
-              child: const Text("Add Inbuilt Course"),
+            // Welcome section
+            Container(
+              margin: EdgeInsets.only(bottom: 24),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.admin_panel_settings,
+                    size: 48,
+                    color: Colors.black87,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    "Admin Dashboard",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    "Manage courses, users, and system settings",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            
+            _buildActionButton(
+              context: context,
+              icon: Icons.add_circle,
+              title: "Add Inbuilt Course",
+              subtitle: "Create new courses with content",
               onPressed: () {
                 Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const AddInbuiltCourse()));
               },
             ),
-            const SizedBox(height:20),
-            ElevatedButton(
-              child: const Text("Manage Courses"),
+            
+            SizedBox(height: 12),
+            
+            _buildActionButton(
+              context: context,
+              icon: Icons.manage_accounts,
+              title: "Manage Courses",
+              subtitle: "Edit or delete existing courses",
               onPressed: () {
                 Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const ManageCourses()));
               },
             ),
-            const SizedBox(height:20),
-            ElevatedButton(
-              child: const Text("Add pdf"),
-              onPressed: (){
+            
+            SizedBox(height: 12),
+            
+            _buildActionButton(
+              context: context,
+              icon: Icons.picture_as_pdf,
+              title: "Add PDF",
+              subtitle: "Upload PDF documents to courses",
+              onPressed: () {
                 Navigator.push(context,
-                  MaterialPageRoute(builder: (_)=>const AddPdf())
-                );
-              }
-            ),
-            const SizedBox(height:20),
-
-            ElevatedButton(
-                child: const Text("Add Video"),
-                onPressed: (){
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_)=>const AddVideo())
-                  );
-                }
-            ),
-            const SizedBox(height:20),
-
-            ElevatedButton(
-              child: const Text("Add Premium Course"),
-              onPressed: (){
-                Navigator.push(context,MaterialPageRoute(builder: (_)=>const AddInbuiltCourse(isPremium:true)));
-              }
-            ),
-            const SizedBox(height:20),
-            ElevatedButton(
-              child: const Text("View Students"),
-              onPressed: (){
-                Navigator.push(context,
-                  MaterialPageRoute(builder:(_)=>const UserListScreen(role:"Student")),
+                  MaterialPageRoute(builder: (_) => AddPdf(teacherId: teacherId))
                 );
               },
             ),
-            const SizedBox(height:20),
-            ElevatedButton(
-              child: const Text("View Teachers"),
-              onPressed: (){
+            
+            SizedBox(height: 12),
+            
+            _buildActionButton(
+              context: context,
+              icon: Icons.video_library,
+              title: "Add Video",
+              subtitle: "Upload video content to courses",
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => AddVideo(teacherId: teacherId))
+                );
+              },
+            ),
+            
+            SizedBox(height: 12),
+            
+            _buildActionButton(
+              context: context,
+              icon: Icons.school,
+              title: "View Students",
+              subtitle: "Manage student accounts and content access",
+              onPressed: () {
+                Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => UserListScreen(role: "Student", adminId: teacherId)),
+                );
+              },
+            ),
+            
+            SizedBox(height: 12),
+            
+            _buildActionButton(
+              context: context,
+              icon: Icons.person,
+              title: "View Teachers",
+              subtitle: "Manage teacher accounts and payments",
+              onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_)=>const UserListScreen(role:"Teacher")),
+                  MaterialPageRoute(builder: (_) => UserListScreen(role: "Teacher", adminId: teacherId)),
                 );
               },
+            ),
+            
+            SizedBox(height: 12),
+            
+            _buildActionButton(
+              context: context,
+              icon: Icons.payment,
+              title: "View Payment History",
+              subtitle: "Monitor all payment transactions",
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ViewPaymentsPage()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, bool isTablet) {
+    return Row(
+      children: [
+        Expanded(
+          child: Divider(
+            color: Colors.grey[300],
+            thickness: 1,
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: isTablet ? 18 : 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[700],
+            ),
+          ),
+        ),
+        Expanded(
+          child: Divider(
+            color: Colors.grey[300],
+            thickness: 1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 70,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.black87,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.white.withOpacity(0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.white.withOpacity(0.8),
             ),
           ],
         ),

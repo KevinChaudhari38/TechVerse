@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'video_player_page.dart';
+import 'payment_page.dart';
 
 class CourseContentPage extends StatelessWidget{
   final String courseId;
@@ -30,6 +31,9 @@ class CourseContentPage extends StatelessWidget{
   }
   @override
   Widget build(BuildContext context){
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    
     return Scaffold(
       appBar: AppBar(title: Text(courseTitle)),
       body: StreamBuilder<DocumentSnapshot>(
@@ -43,9 +47,6 @@ class CourseContentPage extends StatelessWidget{
           }
           final course=snapshot.data!.data() as Map<String,dynamic>;
 
-          if((course['premium']??false)!=isPremium){
-            return const Center(child: Text("This course is not Available, It is in premium mode"));
-          }
           final pdfs=<Map<String,dynamic>>[];
 
           if (course['pdfUrls'] != null && course['pdfUrls'] is List) {
@@ -70,35 +71,75 @@ class CourseContentPage extends StatelessWidget{
             }
           }
 
-          return ListView(
-            padding: const EdgeInsets.all(12),
-            children: [
-              if(pdfs.isNotEmpty)...[
-                const Text("PDFs",
-                  style: TextStyle(fontSize:18,fontWeight:FontWeight.bold)
-                ),
-                ...pdfs.map(
-                    (pdf)=>ListTile(
-                      leading: const Icon(Icons.picture_as_pdf,color:Colors.red),
-                      title: Text(pdf['name']),
+          return SingleChildScrollView(
+            padding: EdgeInsets.all(isTablet ? 24 : 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if(!isPremium && pdfs.isNotEmpty)...[
+                  Text("PDFs", style: TextStyle(fontSize: isTablet ? 20 : 18, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 16),
+                  ...pdfs.map((pdf)=>Card(
+                    margin: EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: Icon(Icons.picture_as_pdf, color: Colors.red, size: isTablet ? 28 : 24),
+                      title: Text(pdf['name'], style: TextStyle(fontSize: isTablet ? 16 : 14)),
+                      trailing: Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: ()=>_openPdf(pdf['url']),
                     ),
-                ),
-                const SizedBox(height: 20),
-              ],
-              if(videos.isNotEmpty)...[
-                const Text("Videos:",
-                  style: TextStyle(fontSize:18,fontWeight: FontWeight.bold)
-                ),
-                ...videos.map(
-                    (video)=>ListTile(
-                      leading: const Icon(Icons.video_library,color:Colors.blueAccent),
-                      title: Text(video['name']),
-                      onTap: ()=>_openVideo(context,video['url']),
+                  )),
+                  SizedBox(height: 24),
+                ],
+                if(videos.isNotEmpty)...[
+                  if(isPremium)...[
+                    Text("Videos:", style: TextStyle(fontSize: isTablet ? 20 : 18, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 16),
+                    ...videos.map((video)=>Card(
+                      margin: EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: Icon(Icons.video_library, color: Colors.blue, size: isTablet ? 28 : 24),
+                        title: Text(video['name'], style: TextStyle(fontSize: isTablet ? 16 : 14)),
+                        trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: ()=>_openVideo(context,video['url']),
+                      ),
+                    )),
+                  ]
+                  else...[
+                    Container(
+                      padding: EdgeInsets.all(isTablet ? 24 : 16),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(Icons.lock, size: isTablet ? 48 : 40, color: Colors.amber[700]),
+                          SizedBox(height: 16),
+                          Text("Premium Content", style: TextStyle(fontSize: isTablet ? 20 : 18, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 8),
+                          Text("Videos are available only for premium users. Upgrade to access premium video content.",
+                            style: TextStyle(fontSize: isTablet ? 16 : 14),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: (){
+                                Navigator.push(context,MaterialPageRoute(builder:(_)=>PaymentPage(amount:1)));
+                              },
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+                              child: Text("Upgrade to Premium", style: TextStyle(fontSize: isTablet ? 16 : 14)),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                ),
+                  ],
+                ],
               ],
-            ],
+            ),
           );
         },
       ),

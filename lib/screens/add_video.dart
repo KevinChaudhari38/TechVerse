@@ -6,7 +6,8 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 
 class AddVideo extends StatefulWidget{
-  const AddVideo({super.key});
+  final String teacherId;
+  const AddVideo({super.key,required this.teacherId});
 
   @override
   AddVideoState createState()=>AddVideoState();
@@ -71,7 +72,7 @@ class AddVideoState extends State<AddVideo>{
           final docId=snapshot.docs.first.id;
           await FirebaseFirestore.instance.collection('courses').doc(docId).update({
             'videoUrls': FieldValue.arrayUnion([
-              {'name':fileName,'url':fileUrl}
+              {'name':fileName,'url':fileUrl,'uploadedBy':widget.teacherId,"uploadedAt":Timestamp.now()}
             ]),
           });
           ScaffoldMessenger.of(context).showSnackBar(
@@ -102,35 +103,69 @@ class AddVideoState extends State<AddVideo>{
 
   @override
   Widget build(BuildContext context){
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    
     return Scaffold(
       appBar: AppBar(title: const Text("Add Video")),
-      body: FutureBuilder<List<String>>(
-        future: _fetchSubjects(),
-        builder: (context,snapshot){
-          if(!snapshot.hasData){
-            return const Center(child: CircularProgressIndicator());
-          }
-          final subjects=snapshot.data!;
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                DropdownButtonFormField<String>(
-                  value: selectedSubject,
-                  hint: const Text("Select Subject"),
-                  onChanged: (value)=>setState(()=>selectedSubject=value),
-                  items: subjects.map((subject)=>DropdownMenuItem(value:subject,child:Text(subject))).toList(),
-                ),
-                const SizedBox(height:20),
-                _isLoading? const CircularProgressIndicator():ElevatedButton.icon(
-                  icon: const Icon(Icons.video_call),
-                  label: const Text("Upload Video"),
-                  onPressed: _uploadVideoForSubject,
-                ),
-              ],
-            ),
-          );
-        },
+      body: Center(
+        child: Container(
+          width: isTablet ? 500 : double.infinity,
+          constraints: BoxConstraints(maxWidth: isTablet ? 500 : screenWidth * 0.9),
+          padding: EdgeInsets.all(isTablet ? 32 : 16),
+          child: FutureBuilder<List<String>>(
+            future: _fetchSubjects(),
+            builder: (context,snapshot){
+              if(!snapshot.hasData){
+                return const Center(child: CircularProgressIndicator());
+              }
+              final subjects=snapshot.data!;
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(isTablet ? 24 : 16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(Icons.video_library, size: isTablet ? 64 : 48, color: Theme.of(context).primaryColor),
+                        SizedBox(height: 16),
+                        Text("Upload Video Content", style: TextStyle(fontSize: isTablet ? 24 : 20, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 8),
+                        Text("Select a course and upload your video file", style: TextStyle(fontSize: isTablet ? 16 : 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 32),
+                  DropdownButtonFormField<String>(
+                    value: selectedSubject,
+                    hint: const Text("Select Subject"),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      prefixIcon: Icon(Icons.school),
+                    ),
+                    onChanged: (value)=>setState(()=>selectedSubject=value),
+                    items: subjects.map((subject)=>DropdownMenuItem(value:subject,child:Text(subject))).toList(),
+                  ),
+                  SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: _isLoading? const CircularProgressIndicator():ElevatedButton.icon(
+                      icon: const Icon(Icons.video_call),
+                      label: const Text("Upload Video"),
+                      style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      onPressed: _uploadVideoForSubject,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }

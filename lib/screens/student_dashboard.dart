@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'course_content_page.dart';
+import 'payment_page.dart';
 
 class StudentDashboard extends StatefulWidget {
-  const StudentDashboard({super.key});
+  final String studentId;
+  const StudentDashboard({super.key,required this.studentId});
 
   @override
   State<StudentDashboard> createState() => _StudentDashboardState();
@@ -12,66 +14,27 @@ class StudentDashboard extends StatefulWidget {
 
 class _StudentDashboardState extends State<StudentDashboard> {
   late Razorpay _razorpay;
-  bool isPremium = false; // local flag (you can also fetch from Firestore for real persistence)
+  bool isPremium = false;
 
   @override
-  void initState() {
+  void initState(){
     super.initState();
-    _razorpay = Razorpay();
-    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+    _loadPremiumStatus();
   }
-
-  void _openCheckout() {
-    var options = {
-      'key': 'rzp_test_R9e67H5dIpbeBV', // <-- Replace with your Razorpay Test Key
-      'amount': 100, // 100 paise = ₹1
-      'name': 'College Project',
-      'description': 'Premium Access',
-      'prefill': {'contact': '9999999999', 'email': 'test@example.com'},
-      'external': {
-        'wallets': ['paytm']
-      }
-    };
-
-    try {
-      _razorpay.open(options);
-    } catch (e) {
-      debugPrint("Error: $e");
+  Future<void> _loadPremiumStatus() async{
+    final snapshot=await FirebaseFirestore.instance.collection('users').doc(widget.studentId).get();
+    if(snapshot.exists){
+      setState((){
+        isPremium=snapshot.data()?['isPremium']??false;
+      });
     }
   }
-
-  void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    setState(() {
-      isPremium = true;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Premium Unlocked! PaymentId: ${response.paymentId}")),
-    );
-
-    // TODO: Save premium status in Firestore for the student
-    // FirebaseFirestore.instance.collection('students').doc(studentId).update({'isPremium': true});
+  Future<void> _updatePremiumStatus() async{
+    await FirebaseFirestore.instance.collection('users').doc(widget.studentId).update({'isPremium':true});
+    setState(()=>isPremium=true);
   }
 
-  void _handlePaymentError(PaymentFailureResponse response) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Payment Failed: ${response.code} - ${response.message}")),
-    );
-  }
 
-  void _handleExternalWallet(ExternalWalletResponse response) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("External Wallet: ${response.walletName}")),
-    );
-  }
-
-  @override
-  void dispose() {
-    _razorpay.clear();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,83 +54,156 @@ class _StudentDashboardState extends State<StudentDashboard> {
           final courses = snapshot.data!.docs;
 
           return ListView.builder(
+            padding: EdgeInsets.all(16),
             itemCount: courses.length,
             itemBuilder: (context, index) {
               final course = courses[index].data() as Map<String, dynamic>;
-
-              return Card(
-                margin: const EdgeInsets.all(10),
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (course['imageUrl'] != null &&
-                          course['imageUrl'].toString().isNotEmpty)
-                        Image.network(
-                          course['imageUrl'],
-                          height: 120,
-                          width: 100,
-                          fit: BoxFit.contain,
-                        ),
-
-                      const SizedBox(height: 8),
-
-                      Text(
-                        course['title'] ?? "No Title",
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-
-                      const SizedBox(height: 5),
-                      Text(course['description'] ?? "No Description"),
-
-                      const SizedBox(height: 10),
-
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CourseContentPage(
-                                courseId: courses[index].id,
-                                courseTitle: course['title'] ?? "Course",
-                              ),
-                            ),
-                          );
-                        },
-                        child: const Text("View Content"),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      isPremium
-                          ? ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CourseContentPage(
-                                courseId: courses[index].id,
-                                courseTitle: course['title'] ?? "Course",
-                                isPremium: true,
-                              ),
-                            ),
-                          );
-                        },
-                        child: const Text("View Premium Content"),
-                      )
-                          : ElevatedButton(
-                        onPressed: _openCheckout,
-                        child: const Text("Add Premium (₹1)"),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+              return _buildCourseCard(context, course, courses[index].id);
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCourseCard(BuildContext context, Map<String, dynamic> course, String courseId) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Course Image
+            if (course['imageUrl'] != null && course['imageUrl'].toString().isNotEmpty)
+              Container(
+                height: 150,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  image: DecorationImage(
+                    image: NetworkImage(course['imageUrl']),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+
+            SizedBox(height: 12),
+
+            // Course Title
+            Text(
+              course['title'] ?? "No Title",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            SizedBox(height: 8),
+
+            // Course Description
+            Text(
+              course['description'] ?? "No Description",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            SizedBox(height: 16),
+
+            // View Content Button
+            SizedBox(
+              width: double.infinity,
+              height: 45,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CourseContentPage(
+                        courseId: courseId,
+                        courseTitle: course['title'] ?? "Course",
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black87,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text("View Content", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ),
+
+            SizedBox(height: 8),
+
+            // Premium Content Button
+            SizedBox(
+              width: double.infinity,
+              height: 45,
+              child: isPremium
+                  ? ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CourseContentPage(
+                              courseId: courseId,
+                              courseTitle: course['title'] ?? "Course",
+                              isPremium: true,
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber[700],
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text("View Premium Content", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    )
+                  : ElevatedButton(
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PaymentPage(amount: 1)),
+                        );
+                        if (result == true) {
+                          final paymentDoc = {
+                            'from': widget.studentId,
+                            'to': "server",
+                            'amount': 1,
+                            'timestamp': Timestamp.now(),
+                            'transId': DateTime.now().millisecondsSinceEpoch.toString(),
+                          };
+                          await FirebaseFirestore.instance.collection('payments').add(paymentDoc);
+                          await _updatePremiumStatus();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[700],
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text("Add Premium (₹1)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'course_content_page.dart';
 import 'payment_page.dart';
+import 'ask_query_page.dart';
+import 'student_queries_page.dart';
 
 class StudentDashboard extends StatefulWidget {
   final String studentId;
@@ -47,19 +49,94 @@ class _StudentDashboardState extends State<StudentDashboard> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No courses available"));
-          }
+          final docs = snapshot.data?.docs ?? [];
 
-          final courses = snapshot.data!.docs;
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // Notice banner
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.lightBlue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.lightBlue.shade200),
+                ),
+                child: const Text(
+                  "Notice: Access PDFs for free. Get premium to watch videos for selected subjects and ask queries to professional teachers.",
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                ),
+              ),
 
-          return ListView.builder(
-            padding: EdgeInsets.all(16),
-            itemCount: courses.length,
-            itemBuilder: (context, index) {
-              final course = courses[index].data() as Map<String, dynamic>;
-              return _buildCourseCard(context, course, courses[index].id);
-            },
+              if (docs.isEmpty)
+                const Center(child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 80),
+                  child: Text("No courses available"),
+                ))
+              else
+                ...docs.map((d) {
+                  final course = d.data() as Map<String, dynamic>;
+                  return _buildCourseCard(context, course, d.id);
+                }).toList(),
+
+              const SizedBox(height: 12),
+
+              if (isPremium)
+                SizedBox(
+                  width: double.infinity,
+                  height: 45,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => AskQueryPage(),
+                      ));
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[700],
+                      foregroundColor: Colors.white,
+                      alignment: Alignment.center,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      "Ask Queries",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+
+              if (isPremium) const SizedBox(height: 10),
+
+              SizedBox(
+                width: double.infinity,
+                height: 45,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const StudentQueriesPage()));
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[700],
+                    foregroundColor: Colors.white,
+                    alignment: Alignment.center,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    "View Queries",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+            ],
           );
         },
       ),
@@ -202,6 +279,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       child: Text("Add Premium (₹1)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
             ),
+
           ],
         ),
       ),

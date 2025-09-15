@@ -108,12 +108,17 @@ class AddVideoState extends State<AddVideo>{
     
     return Scaffold(
       appBar: AppBar(title: const Text("Add Video")),
-      body: Center(
-        child: Container(
-          width: isTablet ? 500 : double.infinity,
-          constraints: BoxConstraints(maxWidth: isTablet ? 500 : screenWidth * 0.9),
-          padding: EdgeInsets.all(isTablet ? 32 : 16),
-          child: FutureBuilder<List<String>>(
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: EdgeInsets.all(isTablet ? 32 : 16),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isTablet ? 500 : screenWidth * 0.9,
+                  ),
+                  child: FutureBuilder<List<String>>(
             future: _fetchSubjects(),
             builder: (context,snapshot){
               if(!snapshot.hasData){
@@ -121,7 +126,7 @@ class AddVideoState extends State<AddVideo>{
               }
               final subjects=snapshot.data!;
               return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Container(
                     padding: EdgeInsets.all(isTablet ? 24 : 16),
@@ -161,10 +166,15 @@ class AddVideoState extends State<AddVideo>{
                       onPressed: _uploadVideoForSubject,
                     ),
                   ),
+                  const SizedBox(height: 24),
                 ],
               );
             },
-          ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

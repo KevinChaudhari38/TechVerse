@@ -140,8 +140,9 @@ class UserListScreen extends StatelessWidget {
                       title: Text("Loading uploads..."),
                     );
                   }
-
-                  final uploads = uploadSnapshot.data ?? {'pdfs': [], 'videos': []};
+                  final teacherId=uploadSnapshot.data??'id';
+                  final queries=FirebaseFirestore.instance.collection('queries').where('teacherId',isEqualTo:teacherId);
+                  final uploads = uploadSnapshot.data ?? {'pdfs': [], 'videos': [] };
                   final pdfs = uploads['pdfs']!;
                   final videos = uploads['videos']!;
 
@@ -164,6 +165,7 @@ class UserListScreen extends StatelessWidget {
                           onTap:()=>_openPdf(pdf['url']??""),
                         )),
                       ],
+
                       if (videos.isNotEmpty) ...[
                         const Padding(
                           padding: EdgeInsets.all(8.0),
@@ -174,14 +176,58 @@ class UserListScreen extends StatelessWidget {
                           onTap:()=>_openVideo(context,video['url']??""),
                         )),
                       ],
-                      if(role=="Teacher")...[
+
+
                         const SizedBox(height:10),
                         ElevatedButton.icon(
                           icon: const Icon(Icons.payment),
                           label: const Text("Pay Teacher"),
                           onPressed:()=> _payTeacher(context,user.id,amount:100),
                         ),
-                      ],
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text("Teacher Queries:", style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('queries')
+                            .where('teacherId', isEqualTo: user.id)
+                            .snapshots(),
+                        builder: (context, querySnapshot) {
+                          if (querySnapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (!querySnapshot.hasData || querySnapshot.data!.docs.isEmpty) {
+                            return const ListTile(title: Text("No queries yet"));
+                          }
+
+                          final queries = querySnapshot.data!.docs;
+
+                          return Column(
+                            children: queries.map((q) {
+                              final data = q.data() as Map<String, dynamic>;
+                              final status = data['status'] ?? "Pending";
+                              final question = data['question'] ?? "No Question";
+                              final answer = data['answer'] ?? "Not answered";
+
+                              return Card(
+                                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                child: ListTile(
+                                  leading: const Icon(Icons.question_answer),
+                                  title: Text(question),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text("Answer: $answer"),
+                                      Text("Status: $status"),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      ),
                     ]
                         : [],
                     trailing: IconButton(

@@ -108,7 +108,7 @@ class AdminDashboard extends StatelessWidget {
               context: context,
               icon: Icons.school,
               title: "View Students",
-              subtitle: "Manage student accounts and content access",
+              subtitle: "Manage student accounts",
               onPressed: () {
                 Navigator.push(context,
                   MaterialPageRoute(builder: (_) => UserListScreen(role: "Student", adminId: teacherId)),
@@ -122,7 +122,7 @@ class AdminDashboard extends StatelessWidget {
               context: context,
               icon: Icons.person,
               title: "View Teachers",
-              subtitle: "Manage teacher accounts and payments",
+              subtitle: "Manage teacher accounts",
               onPressed: () {
                 Navigator.push(
                   context,
@@ -151,35 +151,7 @@ class AdminDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title, bool isTablet) {
-    return Row(
-      children: [
-        Expanded(
-          child: Divider(
-            color: Colors.grey[300],
-            thickness: 1,
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: isTablet ? 18 : 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[700],
-            ),
-          ),
-        ),
-        Expanded(
-          child: Divider(
-            color: Colors.grey[300],
-            thickness: 1,
-          ),
-        ),
-      ],
-    );
-  }
+
 
   Widget _buildActionButton({
     required BuildContext context,
@@ -190,7 +162,7 @@ class AdminDashboard extends StatelessWidget {
   }) {
     return SizedBox(
       width: double.infinity,
-      height: 70,
+      height: 80,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
@@ -199,51 +171,39 @@ class AdminDashboard extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         ),
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: Colors.white,
-              ),
+              child: Icon(icon, size: 24, color: Colors.black87),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.white.withOpacity(0.8),
-                    ),
-                  ),
+                  Text(title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      )),
+                  Text(subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white,
+                      )),
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.white.withOpacity(0.8),
-            ),
+            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white),
           ],
         ),
       ),
